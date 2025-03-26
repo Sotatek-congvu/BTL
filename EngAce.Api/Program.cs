@@ -8,7 +8,7 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
     });
-
+builder.Services.AddMemoryCache();
 var app = builder.Build();
 
 // Cấu hình pipeline
