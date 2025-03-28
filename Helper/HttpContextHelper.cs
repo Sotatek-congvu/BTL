@@ -11,23 +11,9 @@ namespace Helper
             _accessor = accessor;
         }
 
-        public static string? GetAccessKey()
-        {
-            if (!_accessor.HttpContext.Request.Headers.TryGetValue("Authentication", out var accessKey))
-            {
-                return null;
-            }
-
-            var key = accessKey.ToString().Trim();
-            if (!key.StartsWith("AIza") && !key.StartsWith("ya29."))
-            {
-                return null;
-            }
-
-            return key;
-        }
+        
         public static string? GetSecretKey() {
-            return "AIzaSyBJyGB4XXKjGSWRy1KiZtG1i7-O8OCxDwg";
+            return "AIzaSyABUvPGE64A-SSbkpqhhSaU5wLmyNPgeX0";
         }
     }
 }
