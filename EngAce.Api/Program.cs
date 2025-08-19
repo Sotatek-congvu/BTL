@@ -26,14 +26,20 @@ builder.Services.AddCors(options =>
     //           .AllowAnyHeader();
     // });
 });
-
+// Thêm dịch vụ MemoryCache
 builder.Services.AddMemoryCache();
-
+//Thêm Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Cấu hình pipeline
 app.UseRouting();
-
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 // Thêm middleware CORS trước MapControllers
 app.UseCors("AllowAll"); // Dùng chính sách "AllowAll"
 // Nếu dùng chính sách cụ thể: app.UseCors("AllowSpecific");

@@ -8,9 +8,9 @@ namespace CDK.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class ChatbotController(ILogger<ChatbotController> logger) : ControllerBase
+public class TopicController(ILogger<TopicController> logger) : ControllerBase
 {
-    private readonly ILogger<ChatbotController> _logger = logger;
+    private readonly ILogger<TopicController> _logger = logger;
     private readonly string _accessKey = HttpContextHelper.GetSecretKey();
 
     [HttpPost("GenerateAnswer")]
@@ -28,7 +28,7 @@ public class ChatbotController(ILogger<ChatbotController> logger) : ControllerBa
 
         try
         {
-            var result = await ChatScope.GenerateAnswer(_accessKey, request, username, gender, age, englishLevel, enableReasoning, enableSearching);
+            var result = await TopicScope.GenerateAnswer(_accessKey, request, username, gender, age, englishLevel, enableReasoning, enableSearching,request.Topic);
 
             _logger.LogInformation($"{_accessKey[..10]} ({username}) asked (Reasoning: {enableReasoning} - Grounding: {enableSearching}): {request.Question}");
             return Ok(result);
@@ -36,7 +36,7 @@ public class ChatbotController(ILogger<ChatbotController> logger) : ControllerBa
         catch (Exception ex)
         {
             _logger.LogError(ex, "Cannot generate answer");
-            return Ok("Nhắn từ từ thôi bé yêu, bộ mắc đi đẻ quá hay gì 💢\nNgồi đợi 1 phút cho anh đi uống ly cà phê đã.");
+            return Ok("Hoi từ từ thôi bé yêu, bộ mắc đi đẻ quá hay gì 💢\nNgồi đợi 1 phút cho anh đi uống ly cà phê đã.");
         }
     }
 }

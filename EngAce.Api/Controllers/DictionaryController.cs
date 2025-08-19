@@ -3,7 +3,7 @@ using Helper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace EngAce.Api.Controllers
+namespace CDK.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -17,12 +17,14 @@ namespace EngAce.Api.Controllers
         [ResponseCache(Duration = QuizScope.ThreeDaysAsCachingAge, Location = ResponseCacheLocation.Any, NoStore = false)]
         public async Task<ActionResult<string>> Search(string keyword, string? context)
         {
+            //Kiểm tra dữ Access Key
             
             if (string.IsNullOrEmpty(_accessKey))
             {
                 return Unauthorized("Invalid Access Key");
             }
 
+            // Kiểm tra dữ liệu đầu vào 
             if (string.IsNullOrEmpty(keyword))
             {
                 return BadRequest("Không được để trống từ khóa");

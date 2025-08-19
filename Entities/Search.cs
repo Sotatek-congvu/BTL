@@ -1,8 +1,7 @@
-﻿namespace Entities
+﻿namespace Entities;
+
+public class Search
 {
-    public class Search
-    {
-        public required string Keyword { get; set; }
-        public string? Context { get; set; }
-    }
+    public required string Keyword { get; set; }
+    public string? Context { get; set; }
 }

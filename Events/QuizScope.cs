@@ -6,16 +6,16 @@ using Helper;
 using Models.Enums;
 using System.Text;
 
-namespace Events
+namespace Events;
+
+public static class QuizScope
 {
-    public static class QuizScope
-    {
-        public const sbyte MaxTotalWordsOfTopic = 10;
-        public const sbyte MinTotalQuestions = 10;
-        public const sbyte MaxTotalQuestions = 100;
-        public const int ThreeDaysAsCachingAge = 259200;
-        public const int MaxTimeAsCachingAge = int.MaxValue;
-        public const string Instruction = @"
+    public const sbyte MaxTotalWordsOfTopic = 10;
+    public const sbyte MinTotalQuestions = 10;
+    public const sbyte MaxTotalQuestions = 100;
+    public const int ThreeDaysAsCachingAge = 259200;
+    public const int MaxTimeAsCachingAge = int.MaxValue;
+    public const string Instruction = @"
 You are an expert English teacher with over 20 years of teaching experience, and you have spent more than 10 years teaching English to high school students in Vietnam. Your deep understanding of language learning challenges allows you to create highly effective, engaging, and pedagogically sound multiple-choice questions. Below are the detailed requirements for the question set generation:
 
 ### 1. **English Proficiency Level**:
@@ -87,196 +87,157 @@ You are an expert English teacher with over 20 years of teaching experience, and
 ]
 ```";
 
-        public static async Task<List<Quiz>> GenerateQuizes(string apiKey, string topic, List<AssignmentType> quizzTypes, EnglishLevel level, short questionsCount)
+    public static async Task<List<Quiz>> GenerateQuizes(string apiKey, string topic, List<AssignmentType> quizzTypes, EnglishLevel level, short questionsCount)
+    {
+        if (questionsCount <= 15)
         {
-            if (questionsCount <= 15)
+            var results = await GenerateQuizesForLessThan15(apiKey, topic, quizzTypes, level, questionsCount);
+
+            if (results == null || results.Count == 0)
             {
-                var results = await GenerateQuizesForLessThan15(apiKey, topic, quizzTypes, level, questionsCount);
-
-                if (results == null || results.Count == 0)
-                {
-                    throw new InvalidOperationException("Error while executing");
-                }
-
-                return results
-                    .Take(questionsCount)
-                    .Select(q => new Quiz
-                    {
-                        Question = q.Question.Replace("**", "'"),
-                        Options = q.Options.Select(o => o.Replace("**", "'")).ToList(),
-                        RightOptionIndex = q.RightOptionIndex,
-                        ExplanationInVietnamese = q.ExplanationInVietnamese.Replace("**", "'"),
-                    })
-                    .ToList();
+                throw new InvalidOperationException("Error while executing");
             }
-            else
-            {
-                var quizes = new List<Quiz>();
-                var quizTypeQuestionCount = GeneralHelper.GenerateRandomNumbers(quizzTypes.Count, questionsCount);
-                var tasks = new List<Task<List<Quiz>>>();
 
-                for (int i = 0; i < quizTypeQuestionCount.Count; i++)
+            return results
+                .Take(questionsCount)
+                .Select(q => new Quiz
                 {
-                    tasks.Add(GenerateQuizesByType(apiKey, topic, (AssignmentType)(i + 1), level, quizTypeQuestionCount[i]));
-                }
-
-                var results = await Task.WhenAll(tasks);
-
-                foreach (var result in results)
-                {
-                    if (result != null && result.Count != 0)
-                    {
-                        quizes.AddRange(result);
-                    }
-                }
-
-                var random = new Random();
-
-                return quizes.Count == 0 ? quizes : quizes
-                    .AsParallel()
-                    .OrderBy(x => random.Next())
-                    .Select(q => new Quiz
-                    {
-                        Question = q.Question.Replace("**", "'"),
-                        Options = q.Options.Select(o => o.Replace("**", "'")).ToList(),
-                        RightOptionIndex = q.RightOptionIndex,
-                        ExplanationInVietnamese = q.ExplanationInVietnamese.Replace("**", "'"),
-                    })
-                    .ToList();
-            }
+                    Question = q.Question.Replace("**", "'"),
+                    Options = q.Options.Select(o => o.Replace("**", "'")).ToList(),
+                    RightOptionIndex = q.RightOptionIndex,
+                    ExplanationInVietnamese = q.ExplanationInVietnamese.Replace("**", "'"),
+                })
+                .ToList();
         }
-
-        private static async Task<List<Quiz>> GenerateQuizesForLessThan15(string apiKey, string topic, List<AssignmentType> quizzTypes, EnglishLevel level, int questionsCount)
+        else
         {
-            try
-            {
-                var userLevel = GeneralHelper.GetEnumDescription(level);
-                var types = string.Join(", ", quizzTypes.Select(t => GeneralHelper.GetEnumDescription(t)).ToList());
-                var promptBuilder = new StringBuilder();
+            var quizes = new List<Quiz>();
+            var quizTypeQuestionCount = GeneralHelper.GenerateRandomNumbers(quizzTypes.Count, questionsCount);
+            var tasks = new List<Task<List<Quiz>>>();
 
-                promptBuilder.AppendLine($"I am a English learner with the English proficiency level of `{userLevel}` according to the CEFR standard.");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine("## The decription of my level according to the CEFR standard:");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine(GetLevelDescription(level));
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine("## Your task:");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine($"Generate a set of multiple-choice English questions consisting of {questionsCount} to {questionsCount + 5} questions related to the topic '{topic.Trim()}' for me to practice, the quiz should be of the types: {types}");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine("The generated questions should be of the types:");
-                foreach (var type in quizzTypes)
+            for (int i = 0; i < quizTypeQuestionCount.Count; i++)
+            {
+                tasks.Add(GenerateQuizesByType(apiKey, topic, (AssignmentType)(i + 1), level, quizTypeQuestionCount[i]));
+            }
+
+            var results = await Task.WhenAll(tasks);
+
+            foreach (var result in results)
+            {
+                if (result != null && result.Count != 0)
                 {
-                    promptBuilder.AppendLine($"- {GeneralHelper.GetEnumDescription(type)}");
+                    quizes.AddRange(result);
                 }
-
-                var generator = new Generator(apiKey);
-
-                var apiRequest = new ApiRequestBuilder()
-                    .WithSystemInstruction(Instruction)
-                    .WithPrompt(promptBuilder.ToString())
-                    .WithDefaultGenerationConfig(0.5F, ResponseMimeType.Json)
-                    .DisableAllSafetySettings()
-                    .Build();
-
-                var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
-
-                return [.. JsonHelper.AsObject<List<Quiz>>(response.Result)];
             }
-            catch
-            {
-                return [];
-            }
+
+            var random = new Random();
+
+            return quizes.Count == 0 ? quizes : quizes
+                .AsParallel()
+                .OrderBy(x => random.Next())
+                .Select(q => new Quiz
+                {
+                    Question = q.Question.Replace("**", "'"),
+                    Options = q.Options.Select(o => o.Replace("**", "'")).ToList(),
+                    RightOptionIndex = q.RightOptionIndex,
+                    ExplanationInVietnamese = q.ExplanationInVietnamese.Replace("**", "'"),
+                })
+                .ToList();
         }
+    }
 
-        private static async Task<List<Quiz>> GenerateQuizesByType(string apiKey, string topic, AssignmentType quizzType, EnglishLevel level, int questionsCount)
+    private static async Task<List<Quiz>> GenerateQuizesForLessThan15(string apiKey, string topic, List<AssignmentType> quizzTypes, EnglishLevel level, int questionsCount)
+    {
+        try
         {
-            try
-            {
-                var promptBuilder = new StringBuilder();
-                var userLevel = GeneralHelper.GetEnumDescription(level);
-                var type = GeneralHelper.GetEnumDescription(quizzType);
-
-                promptBuilder.AppendLine($"I am a Vietnamese learner with the English proficiency level of `{userLevel}` according to the CEFR standard.");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine("## The decription of my level according to the CEFR standard:");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine(GetLevelDescription(level));
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine("## Your task:");
-                promptBuilder.AppendLine();
-                promptBuilder.AppendLine($"Generate a set of multiple-choice English questions consisting of {questionsCount} to {questionsCount + 5} questions related to the topic '{topic.Trim()}' for me to practice, the type of the questions must be: {type}");
-
-                var generator = new Generator(apiKey);
-
-                var apiRequest = new ApiRequestBuilder()
-                    .WithSystemInstruction(Instruction)
-                    .WithPrompt(promptBuilder.ToString())
-                    .WithDefaultGenerationConfig(0.5F, ResponseMimeType.Json)
-                    .DisableAllSafetySettings()
-                    .Build();
-
-                var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
-
-                return JsonHelper.AsObject<List<Quiz>>(response.Result)
-                    .Take(questionsCount)
-                    .Select(quiz =>
-                    {
-                        quiz.Question = $"({NameAttribute.GetEnumName(quizzType)}) {quiz.Question}";
-                        return quiz;
-                    })
-                    .ToList();
-            }
-            catch
-            {
-                return [];
-            }
-        }
-
-        public static async Task<List<string>> SuggestTopcis(string apiKey, EnglishLevel level)
-        {
+            var userLevel = GeneralHelper.GetEnumDescription(level);
+            var types = string.Join(", ", quizzTypes.Select(t => GeneralHelper.GetEnumDescription(t)).ToList());
             var promptBuilder = new StringBuilder();
 
-            var userLevel = GeneralHelper.GetEnumDescription(level);
-
-            var instruction = "You are an experienced English teacher with over 20 years of experience, currently teaching in Vietnam. I am looking for a list of interesting and engaging topics that match my current English proficiency level, as well as topics that can help me stay motivated in my learning journey.";
-            promptBuilder.AppendLine($"My current English proficiency level is '{userLevel}' according to the CEFR standard.");
-            promptBuilder.AppendLine("This is the decription of my English proficiency according to the CEFR standard:");
+            promptBuilder.AppendLine($"I am a English learner with the English proficiency level of `{userLevel}` according to the CEFR standard.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("## The decription of my level according to the CEFR standard:");
+            promptBuilder.AppendLine();
             promptBuilder.AppendLine(GetLevelDescription(level));
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Please suggest at least 20 completely different topics, each containing fewer than 5 words, that you think are most suitable and interesting for practicing English and match the description of my CEFR level as mentioned above.");
-            promptBuilder.AppendLine("The topics should cover a variety of themes, such as daily life, culture, education, environment, travel, etc., to keep the practice diverse and engaging.");
+            promptBuilder.AppendLine("## Your task:");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("The list of suggested topics should be returned as a JSON array corresponding to the List<string> data type in C# programming language.");
-            promptBuilder.AppendLine("To make the format clear, here's an example of the expected output:");
+            promptBuilder.AppendLine($"Generate a set of multiple-choice English questions consisting of {questionsCount} to {questionsCount + 5} questions related to the topic '{topic.Trim()}' for me to practice, the quiz should be of the types: {types}");
             promptBuilder.AppendLine();
-            promptBuilder.AppendLine("```json");
-            promptBuilder.AppendLine("[");
-            promptBuilder.AppendLine("  \"Family traditions\",");
-            promptBuilder.AppendLine("  \"Modern technology\",");
-            promptBuilder.AppendLine("  \"Travel experiences\",");
-            promptBuilder.AppendLine("  \"Global warming\"");
-            promptBuilder.AppendLine("]");
-            promptBuilder.AppendLine("```");
-            promptBuilder.AppendLine();
-            promptBuilder.AppendLine("Make sure that each topic is unique, concise, and relevant for practicing English at different levels, especially intermediate to advanced.");
+            promptBuilder.AppendLine("The generated questions should be of the types:");
+            foreach (var type in quizzTypes)
+            {
+                promptBuilder.AppendLine($"- {GeneralHelper.GetEnumDescription(type)}");
+            }
 
             var generator = new Generator(apiKey);
 
             var apiRequest = new ApiRequestBuilder()
-                .WithSystemInstruction(instruction)
+                .WithSystemInstruction(Instruction)  // Context có sẵn
+                .WithPrompt(promptBuilder.ToString())  // Yêu Cầu cụ Thể
+                .WithDefaultGenerationConfig(0.5F, ResponseMimeType.Json)
+                .DisableAllSafetySettings()
+                .Build();
+
+            var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
+
+            return [.. JsonHelper.AsObject<List<Quiz>>(response.Result)];
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static async Task<List<Quiz>> GenerateQuizesByType(string apiKey, string topic, AssignmentType quizzType, EnglishLevel level, int questionsCount)
+    {
+        try
+        {
+            var promptBuilder = new StringBuilder();
+            var userLevel = GeneralHelper.GetEnumDescription(level);
+            var type = GeneralHelper.GetEnumDescription(quizzType);
+
+            promptBuilder.AppendLine($"I am a Vietnamese learner with the English proficiency level of `{userLevel}` according to the CEFR standard.");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("## The decription of my level according to the CEFR standard:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine(GetLevelDescription(level));
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine("## Your task:");
+            promptBuilder.AppendLine();
+            promptBuilder.AppendLine($"Generate a set of multiple-choice English questions consisting of {questionsCount} to {questionsCount + 5} questions related to the topic '{topic.Trim()}' for me to practice, the type of the questions must be: {type}");
+
+            var generator = new Generator(apiKey);
+
+            var apiRequest = new ApiRequestBuilder()
+                .WithSystemInstruction(Instruction)
                 .WithPrompt(promptBuilder.ToString())
                 .WithDefaultGenerationConfig(0.5F, ResponseMimeType.Json)
                 .DisableAllSafetySettings()
                 .Build();
 
-            var response = await generator.GenerateContentAsync(apiRequest);
-            return [.. JsonHelper.AsObject<List<string>>(response.Result)];
-        }
+            var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
 
-        private static string GetLevelDescription(EnglishLevel level)
+            return JsonHelper.AsObject<List<Quiz>>(response.Result)
+                .Take(questionsCount)
+                .Select(quiz =>
+                {
+                    quiz.Question = $"({NameAttribute.GetEnumName(quizzType)}) {quiz.Question}";
+                    return quiz;
+                })
+                .ToList();
+        }
+        catch
         {
-            var A1_Description = @"Level A1 (Beginner)
+            return [];
+        }
+    }
+
+   
+
+    private static string GetLevelDescription(EnglishLevel level)
+    {
+        var A1_Description = @"Level A1 (Beginner)
             Grammar:
             - **Verb 'to be' and 'to have'**: Used for simple present tense sentences to describe identity, location, or possession (e.g., 'I am a teacher', 'She has a book', 'He is at home').
             - **Present Simple Tense**: Used for habits and routines, forming sentences with subjects and basic verbs (e.g., 'I eat breakfast every day', 'She goes to school').
@@ -298,108 +259,12 @@ You are an expert English teacher with over 20 years of teaching experience, and
             - **Adjectives**: Common descriptive words (e.g., 'good', 'bad', 'hot', 'cold').
             - **Topics**: Family, basic needs, work and jobs, daily routines, preferences.";
 
-            var A2_Description = @"Level A2 (Elementary)
-            Grammar:
-            - **Present Continuous Tense**: Used to describe actions happening at the moment (e.g., 'I am reading a book', 'They are playing soccer').
-            - **Past Simple Tense**: Used for completed actions in the past, including regular and irregular verbs (e.g., 'I visited the museum', 'She went to the market').
-            - **Modals (can, must, should)**: Expressing ability, permission, and obligation (e.g., 'I can swim', 'You must finish your homework').
-            - **Comparative and Superlative Adjectives**: Forming comparisons (e.g., 'My brother is taller than me', 'This is the best restaurant').
-            - **Future Simple (will)**: Talking about future plans and decisions (e.g., 'I will travel next week').
-            - **Adverbs of Frequency**: Describing how often actions occur (e.g., 'always', 'usually', 'sometimes').
-            - **Possessive Pronouns**: Understanding 'mine', 'yours', 'his', 'hers' (e.g., 'This book is mine').
+      
 
-            Grammar Scope:
-            - Multiple tenses: present, past, and future simple.
-            - Use of conjunctions ('and', 'but', 'because') for longer sentences.
-            - Modals to express different levels of certainty and ability.
-
-            Vocabulary Range:
-            - **Expanding Basic Vocabulary**: Including words for daily routines, transportation, holidays.
-            - **Nouns**: Public places (e.g., 'airport', 'library'), hobbies (e.g., 'reading', 'swimming').
-            - **Verbs**: Verbs of movement (e.g., 'run', 'jump'), travel verbs (e.g., 'fly', 'drive').
-            - **Topics**: Health, shopping, leisure activities, describing feelings and emotions.";
-
-            var B1_Description = @"Level B1 (Intermediate)
-            Grammar:
-            - **Present Perfect Tense**: Used to link the past and present (e.g., 'I have lived here for five years').
-            - **Past Continuous Tense**: Describing ongoing actions in the past (e.g., 'I was reading when you called').
-            - **First and Second Conditional**: Expressing possible and hypothetical situations (e.g., 'If I study, I will pass', 'If I were rich, I would travel').
-            - **Passive Voice**: Shifting focus from the subject to the action (e.g., 'The book was written by him').
-            - **Relative Clauses (who, which, that)**: Providing additional information about nouns (e.g., 'The man who works here is friendly').
-            - **Reported Speech**: Describing what someone said (e.g., 'He said that he would come').
-
-            Grammar Scope:
-            - Combining multiple tenses for more complex sentence structures.
-            - Using relative clauses to add detail and clarity.
-            - Passive voice to discuss formal or written topics.
-
-            Vocabulary Range:
-            - **Broader Vocabulary for Discussion**: Words for work, education, culture, sports.
-            - **Nouns**: Workplaces (e.g., 'office', 'factory'), education (e.g., 'course', 'exam').
-            - **Verbs**: 'advise', 'describe', 'explain'.
-            - **Topics**: Opinions, aspirations, experiences, describing events.";
-
-            var B2_Description = @"Level B2 (Upper-Intermediate)
-            Grammar:
-            - **Third Conditional**: Describing unreal past situations (e.g., 'If I had known, I would have helped').
-            - **Advanced Passive Voice**: Used for emphasis or formal writing (e.g., 'The results have been analyzed').
-            - **Cleft Sentences (It is/was... that/who)**: For emphasis (e.g., 'It was John who finished the task').
-            - **Phrasal Verbs**: Understanding meaning and usage in context (e.g., 'give up', 'put up with').
-            - **Complex Relative Clauses**: Adding layers of detail (e.g., 'The book, which was written in 1990, is still relevant').
-
-            Grammar Scope:
-            - Mastery of conditionals, passives, and complex relative clauses.
-            - Use of emphasis and nuance in formal and informal writing.
-
-            Vocabulary Range:
-            - **Specialized Vocabulary**: Environment, politics, technology, abstract concepts.
-            - **Nouns**: 'pollution', 'legislation'.
-            - **Verbs**: 'negotiate', 'emphasize'.
-            - **Topics**: Debate, argumentation, academic discussions.";
-
-            var C1_Description = @"Level C1 (Advanced)
-            Grammar:
-            - **Inversion for Emphasis**: Using inverted structures (e.g., 'Never have I seen such a view').
-            - **Advanced Modal Verbs**: Speculation and deduction (e.g., 'She must have been tired').
-            - **Mixed Conditionals**: Linking past, present, and future (e.g., 'If I had studied, I would be more confident now').
-            - **Complex Reported Speech**: Describing multiple sources (e.g., 'He claimed that they had already left').
-
-            Grammar Scope:
-            - Mastery of nuanced grammar for precise communication.
-            - High-level linking structures and discourse markers.
-
-            Vocabulary Range:
-            - **Academic and Technical Vocabulary**: Economics, science, critical theory.
-            - **Nouns**: 'methodology', 'innovation'.
-            - **Verbs**: 'analyze', 'justify'.
-            - **Topics**: Research, professional analysis, critical thinking.";
-
-            var C2_Description = @"Level C2 (Proficient)
-            Grammar:
-            - **Complex Syntax and Stylistic Devices**: Mastery of rhetoric, ellipsis, and advanced syntax.
-            - **Subtle Usage of Mood and Aspect**: Use of subjunctive and conditional to convey tone.
-            - **Literary and Idiomatic Expressions**: Ability to use metaphor, irony, and academic discourse.
-
-            Grammar Scope:
-            - Full flexibility in grammar use.
-            - Precise adaptation to style and context.
-
-            Vocabulary Range:
-            - **Highly Advanced Vocabulary**: Philosophy, literature, high-level research.
-            - **Nouns**: 'dialectics', 'semantics'.
-            - **Verbs**: 'elucidate', 'expound'.
-            - **Topics**: Advanced academic and professional settings.";
-
-            return level switch
-            {
-                EnglishLevel.Beginner => A1_Description,
-                EnglishLevel.Elementary => A2_Description,
-                EnglishLevel.Intermediate => B1_Description,
-                EnglishLevel.UpperIntermediate => B2_Description,
-                EnglishLevel.Advanced => C1_Description,
-                EnglishLevel.Proficient => C2_Description,
-                _ => string.Empty,
-            };
-        }
+        return level switch
+        {
+            EnglishLevel.Beginner => A1_Description,
+            _ => string.Empty,
+        };
     }
 }

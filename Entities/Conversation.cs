@@ -1,15 +1,15 @@
-﻿namespace Entities
-{
-    public class Conversation
-    {
-        public List<History> ChatHistory { get; set; } = [];
-        public required string Question { get; set; }
-        public List<string>? ImagesAsBase64 { get; set; }
+﻿namespace Entities;
 
-        public class History
-        {
-            public bool FromUser { get; set; }
-            public required string Message { get; set; }
-        }
+public class Conversation
+{
+    public List<History> ChatHistory { get; set; } = [];
+    public required string Question { get; set; }
+    public List<string>? ImagesAsBase64 { get; set; }
+    public required string Topic { get; set; }
+
+    public class History
+    {
+        public bool FromUser { get; set; }
+        public required string Message { get; set; }
     }
 }

@@ -5,11 +5,11 @@ VisualStudioVersion = 17.8.34511.84
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Entities", "Entities\Entities.csproj", "{65082084-4160-4CE1-885D-B5B3D5F200FF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EngAce.Api", "EngAce.Api\EngAce.Api.csproj", "{25AA1613-7609-4482-9CAB-232FFF3214A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDK.Api", "EngAce.Api\CDK.Api.csproj", "{25AA1613-7609-4482-9CAB-232FFF3214A0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Helper", "Helper\Helper.csproj", "{9D0845A2-6BCC-421D-B0D6-06CF0F29799E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Events", "Events\Events.csproj", "{DC3DA4AF-AC8E-4371-A8C8-B3CCDA84E593}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Events", "Events\Events.csproj", "{DC3DA4AF-AC8E-4371-A8C8-B3CCDA84E593}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
