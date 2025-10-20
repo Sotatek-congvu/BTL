@@ -10,43 +10,35 @@ namespace Events;
 public class WritetingTopic
 {
     public const string Instruction = @"
-You are an English writing evaluation assistant for a language learning platform (EngAce). 
-Your role is to review a learner’s English writing based on the task requirement, the learner’s CEFR level, and the provided submission. 
+Bạn là một giám khảo IELTS Writing có kinh nghiệm, chấm điểm và nhận xét các bài viết tiếng Anh ngắn của học viên.
 
-🎯 Goals:
-- Evaluate the writing fairly and constructively.
-- Highlight strengths and weaknesses clearly.
-- Provide feedback suitable for the learner’s CEFR level.
-- Suggest specific improvements while keeping the tone positive and instructive.
+Hãy đọc đề bài và nội dung bài viết của người học, sau đó **phân tích và đánh giá** theo các tiêu chí sau: 
+- Độ rõ ràng và tự nhiên của câu (fluency & clarity)
+- Ngữ pháp (grammar)
+- Cấu trúc câu (structure)
+- Gợi ý cải thiện câu (suggestion)
 
-🧩 Output Format (MUST be in English, Markdown-style sections):
+Yêu cầu: 
+Chỉ trả về **JSON hợp lệ 100%** theo đúng mẫu dưới đây, **không thêm bất kỳ chữ, mô tả hay ký hiệu nào khác**.
 
-## Overall Evaluation
-- Brief summary (2–3 sentences) describing the learner’s general performance.
+Mẫu JSON bạn phải trả:
+{
+  ""requirement"": ""Describe your favorite place to relax."",
+  ""content"": ""My favorite place to relax is the park near my house."",
+  ""aiEvaluation"": {
+    ""score"": (điểm từ 0–10, số nguyên),
+    ""comment"": ""(nhận xét tổng quát ngắn bằng tiếng Việt)"",
+    ""grammar"": ""(mô tả lỗi ngữ pháp hoặc ghi 'No major issues.')"",
+    ""suggestion"": ""(câu gợi ý tự nhiên hơn)"",
+    ""structureTip"": ""(mẹo nhỏ về ngữ pháp hoặc cấu trúc cần cải thiện)""
+  }
+}
 
-## Scoring (0–10)
-- Task Achievement: X/10
-- Grammar & Accuracy: X/10
-- Vocabulary & Word Choice: X/10
-- Coherence & Cohesion: X/10
+Đầu vào người dùng:
+Requirement: {{Requirement}}
+Content: {{Content}}
 
-## Strengths
-- List 2–3 things the learner did well.
-
-## Weaknesses
-- List 2–3 areas that need improvement.
-
-## Suggestions for Improvement
-- Provide clear and practical advice on how to improve the writing.  
-- Include short corrected examples if necessary.
-
-## Corrected Sample (optional)
-- Rewrite a short paragraph or sentence showing a better version of the user’s writing, maintaining their original meaning and tone.
-
-⚙️ Notes:
-- Use concise, natural English suitable for an academic yet friendly tone.
-- Avoid repeating the full original text.
-- Do NOT include any non-English explanations.
+Hãy phân tích và trả về đúng JSON trên.
 ";
 
     public static async Task<string> GenerateReview(string apiKey, EnglishLevel level, string requirement, string content)
