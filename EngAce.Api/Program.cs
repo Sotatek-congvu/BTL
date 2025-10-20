@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,31 +15,39 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()    // Cho phép tất cả các origin (dùng trong dev/test)
-              .AllowAnyMethod()    // Cho phép tất cả các HTTP method (GET, POST, v.v.)
-              .AllowAnyHeader();   // Cho phép tất cả các header
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
-    // Nếu chỉ muốn cho phép origin cụ thể (ví dụ: GitHub Pages), thay bằng:
-    // options.AddPolicy("AllowSpecific", policy =>
-    // {
-    //     policy.WithOrigins("https://<username>.github.io") // Thay bằng URL của bạn
-    //           .AllowAnyMethod()
-    //           .AllowAnyHeader();
-    // });
+});
+
+// Thêm Swagger
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "My API",
+        Version = "v1",
+        Description = "API Demo with Swagger"
+    });
 });
 
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
-// Cấu hình pipeline
+// Cấu hình middleware
+if (app.Environment.IsDevelopment())
+{
+    // Bật Swagger UI trong môi trường dev
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+app.UseHttpsRedirection();
 app.UseRouting();
-
-// Thêm middleware CORS trước MapControllers
-app.UseCors("AllowAll"); // Dùng chính sách "AllowAll"
-// Nếu dùng chính sách cụ thể: app.UseCors("AllowSpecific");
+app.UseCors("AllowAll");
 
 app.MapControllers();
 
-// Chạy ứng dụng
 app.Run();
