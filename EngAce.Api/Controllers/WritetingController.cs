@@ -15,9 +15,6 @@ public class WritingAiController(IMemoryCache cache, ILogger<WritingAiController
     private readonly ILogger<WritingAiController> _logger = logger;
     private readonly string _accessKey = HttpContextHelper.GetSecretKey();
 
-    /// <summary>
-    /// Sinh bài luyện viết tự động theo chủ đề (gồm hội thoại song ngữ + gợi ý từ vựng & cấu trúc).
-    /// </summary>
     [HttpPost("GenerateTopic")]
     public async Task<ActionResult<string>> GenerateTopic([FromBody] WritingTopicRequest request)
     {
