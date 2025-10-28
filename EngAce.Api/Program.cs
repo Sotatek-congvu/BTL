@@ -1,7 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using EngAce.Api.Cached;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
-
+using StackExchange.Redis;
+var redisConn = "red-d40dkgvdiees73aqn520:6379,password=FjjvsGVhpze7gjLHE6tilwJgW7PLHbR0,abortConnect=false";
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisConn));
+builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
