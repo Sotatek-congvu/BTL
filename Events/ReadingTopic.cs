@@ -43,38 +43,7 @@ SCHEMA JSON:
 }
 ";
 
-    // ====== (2) System instruction sinh bộ câu hỏi TOEIC (XML) ======
-    public const string ToeicQuestionsInstruction = @"
-You are an expert TOEIC Reading Comprehension test designer.
-Read the passage, analyze its vocabulary, structure, and themes, then generate questions suitable for the specified TOEIC/CEFR level.
-
-Level mapping:
-- A1: literal comprehension only (3–4 MCQ)
-- A2: 4–5 MCQ, include 1–2 simple inference/context items
-- B1: 5–6 items (mix MCQ + short answer), inference, vocab-in-context, author's purpose
-
-Scoring:
-- Each correct = 1 point
-- Provide a rubric with total and performance bands
-
-Output MUST be **XML only**, strictly this structure:
-
-<comprehension_questions>
-[Level-appropriate questions; MCQ include options; B1 may include short-answer]
-</comprehension_questions>
-
-<answer_key>
-[Correct answers with brief explanations]
-</answer_key>
-
-<scoring_rubric>
-- Total Questions: [N]
-- Each correct answer = 1 point
-- 90–100% = Excellent
-- 70–89%  = Good
-- <70%    = Needs Improvement
-</scoring_rubric>
-";
+    
 
     // ====== (3) Generate Reading JSON ======
     public static async Task<string> GenerateReadingAsync(
@@ -114,48 +83,7 @@ Output MUST be **XML only**, strictly this structure:
         return response.Result; // JSON string
     }
 
-    // ====== (4) Generate TOEIC questions (XML) từ passage & level ======
-    public static async Task<string> GenerateToeicQuestionsAsync(
-        string apiKey,
-        string passagePlainText,
-        string level,
-        float temperature = 0.6f
-    )
-    {
-        var prompt = $"Level: {level}\nReading Passage:\n{passagePlainText}";
-
-        var generator = new Generator(apiKey);
-        var apiRequest = new ApiRequestBuilder()
-            .WithSystemInstruction(ToeicQuestionsInstruction)
-            .WithPrompt(prompt)
-            .WithDefaultGenerationConfig(temperature, ResponseMimeType.PlainText)
-            .DisableAllSafetySettings()
-            .Build();
-
-        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
-        return response.Result; // XML string
-    }
-
-    // ====== (5) Helper: rút passage thuần từ JSON reading ======
-    public static string ExtractPassageFromReadingJson(string readingJson)
-    {
-        using var doc = JsonDocument.Parse(readingJson);
-        var root = doc.RootElement;
-
-        if (!root.TryGetProperty("text", out var text) ||
-            !text.TryGetProperty("paragraphs", out var paras) ||
-            paras.ValueKind != JsonValueKind.Array)
-            return string.Empty;
-
-        var sb = new StringBuilder();
-        foreach (var p in paras.EnumerateArray())
-        {
-            var line = p.GetString();
-            if (!string.IsNullOrWhiteSpace(line))
-                sb.AppendLine(line.Trim());
-        }
-        return sb.ToString().Trim();
-    }
+    
 
     // ====== (6) Helper: hash key tiện cache ======
     public static string Sha256(string s)

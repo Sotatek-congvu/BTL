@@ -2,12 +2,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using StackExchange.Redis;
-var redisConn = "red-d40dkgvdiees73aqn520:6379,password=FjjvsGVhpze7gjLHE6tilwJgW7PLHbR0,abortConnect=false";
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<IConnectionMultiplexer>(
-    ConnectionMultiplexer.Connect(redisConn));
-builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+var redisConfig = new ConfigurationOptions
+{
+    EndPoints = { { "redis-13910.crce185.ap-seast-1-1.ec2.redns.redis-cloud.com", 13910 } },
+    User = "default",
+    Password = "TZQbYDYpnsvGAcOee52YhveGO7ug7Apn",
+    AbortOnConnectFail = false,
+    ConnectTimeout = 8000,
+    SyncTimeout = 8000
+};
 
+// ✅ 2. Khởi tạo ConnectionMultiplexer dùng Singleton
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisConfig)
+);
+builder.Services.AddSingleton<ICacheService, RedisCacheService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
