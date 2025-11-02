@@ -1,16 +1,15 @@
 ﻿using Gemini.NET;
 using Models.Enums;
 using System.Text;
-using System.Text.Json;
 
-namespace Events
+namespace Events;
+
+public static class SearchScope
 {
-    public static class SearchScope
-    {
-        public const sbyte MaxKeywordTotalWords = 7;
-        public const sbyte MaxContextTotalWords = 15;
+    public const sbyte MaxKeywordTotalWords = 7;
+    public const sbyte MaxContextTotalWords = 15;
 
-        private const string _instruction = @"Bạn là một từ điển Anh-Việt toàn diện, chính xác và giàu tính ứng dụng, được thiết kế để giúp người dùng hiểu và sử dụng từ vựng một cách tự nhiên, đúng ngữ pháp và phù hợp với ngữ cảnh. Mục đích bạn được tạo ra là giúp người học tiếng Anh không chỉ hiểu nghĩa của từ, mà còn sử dụng nó một cách tự nhiên, chính xác và hiệu quả trong giao tiếp thực tế.  
+    private const string _instruction = @"Bạn là một từ điển Anh-Việt toàn diện, chính xác và giàu tính ứng dụng, được thiết kế để giúp người dùng hiểu và sử dụng từ vựng một cách tự nhiên, đúng ngữ pháp và phù hợp với ngữ cảnh. Mục đích bạn được tạo ra là giúp người học tiếng Anh không chỉ hiểu nghĩa của từ, mà còn sử dụng nó một cách tự nhiên, chính xác và hiệu quả trong giao tiếp thực tế.  
 
 ##  Mục Tiêu Chính  
 1. Giải nghĩa chính xác & dễ hiểu, ưu tiên nghĩa phù hợp nhất với ngữ cảnh.  
@@ -174,50 +173,89 @@ Từ: ""advice""
 ✅ Khi Trả Lời Bỏ Các thông tin kí hiệu thừa như dâu * hay các thông tin gợi ý tìm kiếm trên google.
 ✅ Kiểm tra chính tả & ngữ pháp trước khi gửi.
 }";
-        public static async Task<string> Search(string apiKey, string keyword, string context)
+    public static async Task<string> Search(string apiKey, string keyword, string context)
+    {
+        // 🔹 Chuẩn bị prompt
+        var promptBuilder = new StringBuilder();
+        keyword = keyword.Trim();
+
+        promptBuilder.AppendLine("## Từ khóa cần tra cứu:");
+        promptBuilder.AppendLine($"- {keyword}");
+        if (!string.IsNullOrEmpty(context))
         {
-            var promptBuilder = new StringBuilder();
-            keyword = keyword.Trim();
-
-            promptBuilder.AppendLine("## Từ khóa cần tra cứu:");
-            promptBuilder.AppendLine($"- {keyword}");
-            if (!string.IsNullOrEmpty(context))
-            {
-                promptBuilder.AppendLine("## Ngữ cảnh chứa từ khóa cần tra cứu:");
-                promptBuilder.AppendLine($"- {context.Trim()}");
-            }
-
-            var apiRequest = new ApiRequestBuilder()
-                .WithSystemInstruction(_instruction)
-                .WithPrompt(promptBuilder.ToString())
-                .WithDefaultGenerationConfig(0.5F)
-                .DisableAllSafetySettings()
-                .EnableGrounding()
-                .Build();
-
-            var generator = new Generator(apiKey)
-               .ExcludesSearchEntryPointFromResponse()
-               .IncludesGroundingDetailInResponse();
-
-            var responseWithSearching = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
-
-            if (responseWithSearching.GroundingDetail?.Sources == null && responseWithSearching.GroundingDetail?.SearchSuggestions == null)
-            {
-                return responseWithSearching.Result;
-            }
-
-            if (responseWithSearching.GroundingDetail?.Sources?.Count == 0 && responseWithSearching.GroundingDetail?.SearchSuggestions?.Count == 0)
-            {
-                return responseWithSearching.Result;
-            }
-
-            var stringBuilder = new StringBuilder();
-            stringBuilder.AppendLine(responseWithSearching.Result);
-            stringBuilder.AppendLine();
-            stringBuilder.AppendLine("---");
-
-            return stringBuilder.ToString().Trim();
+            promptBuilder.AppendLine("## Ngữ cảnh chứa từ khóa cần tra cứu:");
+            promptBuilder.AppendLine($"- {context.Trim()}");
         }
-       
+
+        // 🔹 Cấu hình request gửi tới Gemini
+        var apiRequest = new ApiRequestBuilder()
+            .WithSystemInstruction(_instruction)
+            .WithPrompt(promptBuilder.ToString())
+            .WithDefaultGenerationConfig(0.5F)
+            .DisableAllSafetySettings()
+            // ⚠️ Grounding đôi khi khiến lỗi JSON => chỉ bật nếu bạn cần trích dẫn nguồn
+            //.EnableGrounding()
+            .Build();
+
+        var generator = new Generator(apiKey)
+            .ExcludesSearchEntryPointFromResponse()
+            .IncludesGroundingDetailInResponse();
+
+        // 🔹 Gọi Gemini an toàn, có try/catch để tránh crash
+        object? responseWithSearching = null;
+        try
+        {
+            responseWithSearching = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash);
+        }
+        catch (Exception ex)
+        {
+            // Nếu Gemini trả lỗi JSON hoặc grounding null
+            return $"⚠️ Lỗi khi truy vấn Gemini: {ex.Message}\n" +
+                   "→ Hãy thử lại sau ít phút nhé.";
+        }
+
+        // 🔹 Trích xuất nội dung an toàn
+        dynamic res = responseWithSearching!;
+        string? resultText = null;
+        try
+        {
+            resultText = res.Result?.Trim();
+        }
+        catch
+        {
+            // Nếu không có trường Result hợp lệ
+            resultText = res?.ToString()?.Trim();
+        }
+
+        if (string.IsNullOrWhiteSpace(resultText))
+            return "⚠️ Không nhận được phản hồi hợp lệ từ Gemini.";
+
+        // 🔹 Kiểm tra grounding metadata (nếu có)
+        bool hasGrounding = false;
+        try
+        {
+            var sources = res?.GroundingDetail?.Sources;
+            var suggestions = res?.GroundingDetail?.SearchSuggestions;
+            hasGrounding = (sources != null && sources.Count > 0) ||
+                           (suggestions != null && suggestions.Count > 0);
+        }
+        catch
+        {
+            hasGrounding = false;
+        }
+
+        // 🔹 Ghép kết quả
+        if (!hasGrounding)
+            return resultText;
+
+        var sb = new StringBuilder();
+        sb.AppendLine(resultText);
+        sb.AppendLine();
+        sb.AppendLine("---");
+
+        return sb.ToString().Trim();
     }
+
+
+
 }

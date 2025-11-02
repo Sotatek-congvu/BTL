@@ -39,4 +39,8 @@
 	  <PackageReference Include="Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel" Version="2.23.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Cached\" />
+  </ItemGroup>
+
 </Project>
