@@ -86,7 +86,7 @@ Tiêu đề: Bài 2 - Danh từ
             .DisableAllSafetySettings()
             .Build();
 
-        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
+        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
 
         return response.Result;
     }
