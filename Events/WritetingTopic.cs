@@ -67,7 +67,7 @@ Hãy phân tích và trả về đúng JSON trên.
             .DisableAllSafetySettings()
             .Build();
 
-        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
+        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
 
         return response.Result;
     }
@@ -157,7 +157,7 @@ Example output:
             .DisableAllSafetySettings()
             .Build();
 
-        var response = await generator.GenerateContentAsync(apiRequest,ModelVersion.Gemini_20_Flash_Thinking);
+        var response = await generator.GenerateContentAsync(apiRequest,ModelVersion.Gemini_20_Flash_Lite);
         return response.Result;
     }
 

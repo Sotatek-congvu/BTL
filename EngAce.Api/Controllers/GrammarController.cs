@@ -35,15 +35,15 @@ public class GrammarController(IMemoryCache cache, ILogger<GrammarController> lo
         // ✅ Kiểm tra cache trước
         if (_cache.TryGetValue(cacheKey, out string cachedResult))
         {
+            _logger.LogInformation("AccessKey: {AccessKey} retrieved cached grammar theory for: {TitleLesson}",
+                _accessKey[..10], titleLesson);
             return Ok(cachedResult);
         }
 
         try
         {
-            // ✅ Gọi generator sinh lý thuyết
             var result = await GrammarTheoryGenerator.GenerateTheoryAsync(_accessKey, titleLesson);
 
-            // ✅ Lưu cache 3 giờ (có thể đổi sang Days nếu muốn)
             _cache.Set(cacheKey, result, TimeSpan.FromHours(3));
 
             // ✅ Ghi log hoạt động

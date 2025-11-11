@@ -124,7 +124,7 @@ Suggestion: ...
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-        var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={apiKey}";
+        var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-lite:generateContent?key={apiKey}";
 
         using var client = new HttpClient();
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -187,7 +187,7 @@ Learner's answer: {learnerAnswer}
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(body);
-        var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={apiKey}";
+        var url = $"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-lite:generateContent?key={apiKey}";
 
         using var client = new HttpClient();
         var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -269,7 +269,7 @@ Topic: {topic}
             .DisableAllSafetySettings()
             .Build();
 
-        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Thinking);
+        var response = await generator.GenerateContentAsync(apiRequest, ModelVersion.Gemini_20_Flash_Lite);
         return response.Result;
     }
 
