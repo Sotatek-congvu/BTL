@@ -44,7 +44,7 @@ public class GrammarController(IMemoryCache cache, ILogger<GrammarController> lo
         {
             var result = await GrammarTheoryGenerator.GenerateTheoryAsync(_accessKey, titleLesson);
 
-            _cache.Set(cacheKey, result, TimeSpan.FromHours(3));
+            _cache.Set(cacheKey, result, TimeSpan.FromDays(5));
 
             // ✅ Ghi log hoạt động
             _logger.LogInformation("AccessKey: {AccessKey} generated grammar theory for: {TitleLesson}",

@@ -13,7 +13,7 @@ namespace Helper
 
         
         public static string? GetSecretKey() {
-            return "AIzaSyB8NRfN5wzgNz3Vp5CsHopUO_ubfHtcSN4";
+            return "AIzaSyDdJ_2bYBkJ3sye5Io5TG0vlTkZPhrg3Ok";
         }
     }
 }

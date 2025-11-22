@@ -42,7 +42,7 @@ public class WritingAiController(IMemoryCache cache, ILogger<WritingAiController
                 request.Topic
             );
 
-            _cache.Set(cacheKey, result, TimeSpan.FromDays(1));
+            _cache.Set(cacheKey, result, TimeSpan.FromHours(2));
             _logger.LogInformation("AI generated writing topic for {Topic} - Level: {Level}", request.Topic, request.Level);
 
             return Created("Success", result);

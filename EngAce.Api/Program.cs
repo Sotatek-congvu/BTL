@@ -1,7 +1,6 @@
 ﻿
 using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
