@@ -1,4 +1,5 @@
 ﻿
+using Helper;
 using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -33,7 +34,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddMemoryCache();
-
+HttpContextHelper.Configure(builder.Configuration);
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
