@@ -11,7 +11,7 @@ namespace EngAce.Api.Controllers
     public class ChatbotController(ILogger<ChatbotController> logger) : ControllerBase
     {
         private readonly ILogger<ChatbotController> _logger = logger;
-        private readonly string _accessKey = HttpContextHelper.GetSecretKey();
+        private  string? _accessKey = HttpContextHelper.GetSecretKey();
 
         [HttpPost("GenerateAnswer")]
         public async Task<ActionResult<string>> GenerateAnswer([FromBody] Conversation request, string username, string gender, sbyte age, EnglishLevel englishLevel, bool enableReasoning = false, bool enableSearching = false)

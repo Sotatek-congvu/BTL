@@ -13,7 +13,7 @@ public class WritingAiController(IMemoryCache cache, ILogger<WritingAiController
 {
     private readonly IMemoryCache _cache = cache;
     private readonly ILogger<WritingAiController> _logger = logger;
-    private readonly string _accessKey = HttpContextHelper.GetSecretKey();
+    private string? _accessKey = HttpContextHelper.GetSecretKey();
 
     [HttpPost("GenerateTopic")]
     public async Task<ActionResult<string>> GenerateTopic([FromBody] WritingTopicRequest request)
