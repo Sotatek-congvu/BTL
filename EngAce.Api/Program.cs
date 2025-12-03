@@ -1,6 +1,9 @@
 ﻿
 using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
+
+var geminiKey = builder.Configuration["GEMINI_API_KEY"];
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {

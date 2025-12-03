@@ -1,21 +1,19 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.Extensions.Configuration;
 
 namespace Helper
 {
     public static class HttpContextHelper
     {
-        private static IHttpContextAccessor _accessor;
+        private static IConfiguration? _config;
 
-        public static void Configure(IHttpContextAccessor accessor)
+        public static void Configure(IConfiguration config)
         {
-            _accessor = accessor;
+            _config = config;
         }
 
-        
-        public static string? GetSecretKey() {
-            return "AIzaSyDdJ_2bYBkJ3sye5Io5TG0vlTkZPhrg3Ok";
+        public static string? GetSecretKey()
+        {
+            return _config?["GEMINI_API_KEY"];
         }
     }
 }
-
-
